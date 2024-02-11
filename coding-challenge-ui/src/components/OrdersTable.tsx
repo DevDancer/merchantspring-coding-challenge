@@ -31,6 +31,10 @@ const StyledTableList = styled.table`
   .items {
     padding-left: 35px;
   }
+  .sortButton {
+    border: none;
+    background-color: #f2f5f9;
+  }
 `;
 
 type OrdersTableProps = {
@@ -81,7 +85,13 @@ export const OrdersTable = ({ orderItems, itemsPerPage, handleSort, sortIcon }: 
             <th>ORDER VALUE</th>
             <th>ITEMS</th>
             <th>DESTINATION</th>
-            <th>DAYS OVERDUE <button data-testid={"sortButton"} onClick={handleSort}><FontAwesomeIcon icon={sortIcon} /></button></th>
+            <th>DAYS OVERDUE <button 
+                className={"sortButton"}
+                data-testid={"sortButton"}
+                onClick={handleSort}>
+                  <FontAwesomeIcon icon={sortIcon} />
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>

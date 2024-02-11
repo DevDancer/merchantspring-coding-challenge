@@ -44,7 +44,7 @@ export type Order = {
 
 export const OverdueOrders = () => {
   const [overdueOrders, setOverdueOrders] = useState<Order[]>([]);
-  const [filterToggle, setFilterToggle] = useState(1);
+  const [filterToggle, setFilterToggle] = useState(2);
   const [sortIcon, setSortIcon] = useState<IconProp>(faSort)
 
   useEffect(() => {
@@ -54,21 +54,31 @@ export const OverdueOrders = () => {
   }, []);
 
   const handleSort = () => {
-    if (filterToggle % 2 === 0) {
+    if (filterToggle === 1) {
+      setOverdueOrders(overdueOrders?.slice(0).sort((a, b) => parseInt(a.Id) - parseInt(b.Id)));
+      setSortIcon(faSort);
+      setFilterToggle(filterToggle + 1);
+    } else if (filterToggle === 2) {
       setOverdueOrders(overdueOrders?.slice(0).sort((a, b) => b.daysOverdue - a.daysOverdue));
       setSortIcon(faSortDown);
-    } else {
+      setFilterToggle(filterToggle + 1);
+    } else if (filterToggle === 3) {
       setOverdueOrders(overdueOrders?.slice(0).sort((a, b) => a.daysOverdue - b.daysOverdue));
       setSortIcon(faSortUp);
+      setFilterToggle(1);
     }
-    setFilterToggle(filterToggle + 1);
   };
 
   return (
     <OrdersBackground>
       <OrdersWrapper>
         <OrdersHeader>Overdue Orders</OrdersHeader>
-        <OrdersTable orderItems={overdueOrders} itemsPerPage={5} handleSort={handleSort} sortIcon={sortIcon} />
+        <OrdersTable
+          orderItems={overdueOrders}
+          itemsPerPage={5}
+          handleSort={handleSort}
+          sortIcon={sortIcon}
+        />
       </OrdersWrapper>
     </OrdersBackground>
   );
