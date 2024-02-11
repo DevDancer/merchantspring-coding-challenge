@@ -1,7 +1,8 @@
+import { Request, Response } from 'express';
 import fs from 'fs';
 import { parse } from 'csv-parse';
 
-type StoreInfo = {
+type Store = {
   storeId: string;
   marketplace: string;
   country: string;
@@ -23,8 +24,20 @@ type Order = {
   daysOverdue?: number;
 }
 
-export function convertShopInfo(): Promise<StoreInfo[]> {
-  const stores: StoreInfo[] = [];
+export function readOrderInfo(): Promise<Order[]> {
+  let orders: Order[] = [];
+
+  return new Promise((resolve, reject) => {
+    fs.createReadStream("./data/orders.csv")
+      .pipe(parse({ delimiter: ',', columns: true, ltrim: true }))
+      .on("data", row => orders.push(row))
+      .on("error", error => reject(error))
+      .on("end", () => resolve(orders));
+  });
+}
+
+export function readShopInfo(): Promise<Store[]> {
+  let stores: Store[] = [];
 
   return new Promise((resolve, reject) => {
     fs.createReadStream("./data/stores.csv")
@@ -48,30 +61,28 @@ export function calcDaysOverdue(date: string): number {
   return Math.round((today.getTime() - new Date(lastShipmentDate).getTime()) / (1000 * 3600 * 24));
 }
 
-export async function getOrders(req: any, res: any) {
-  try {
-    const orders: Order[] = [];
-    const stores: StoreInfo[] = await convertShopInfo();
+export async function getOrders(req: Request, res: Response) {
 
-    fs.createReadStream("./data/orders.csv")
-      .pipe(parse({ delimiter: ",", columns: true, ltrim: true }))
-      .on("data", row => {
-        const matchedStore = stores.find(store => store.storeId == row.storeId);
-        row.storeName = matchedStore?.shopName;
-        row.marketplace = matchedStore?.marketplace;
-        row.storeCountry = matchedStore?.country;
-        row.daysOverdue = calcDaysOverdue(row.latest_ship_date);
-        orders.push(row);
-      })
-      .on("error", error => {
-        console.log(error.message);
-        return res.status(500);
-      })
-      .on("end", () => {
-        console.log("finished getting orders");
-        return res.status(200).json(orders);
-      });
-  } catch (e) {
-    return res.status(500).json(e);
+  try {
+    const stores: Store[] = await readShopInfo();
+    const orders: Order[] = await readOrderInfo();
+
+    const updatedOrders = orders.map(order => {
+      const matchedStore = stores.find(store => store.storeId == order.storeId);
+
+      return {
+        ...order,
+        storeName: matchedStore?.shopName,
+        marketplace: matchedStore?.marketplace,
+        storeCountry: matchedStore?.country,
+        daysOverdue: calcDaysOverdue(order.latest_ship_date),
+      };
+    });
+
+    return res.status(200).json(updatedOrders);
+  } catch (error) {
+    console.log("error::", error);
+    return res.status(500).json(error);
   }
+
 }
